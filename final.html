@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Happy New Year 2026 🎆</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+@font-face{
+  font-family:'Ricopalm';
+  src:url('./Ricopalm-Regular.ttf') format('truetype');
+}
+
+html,body{
+  margin:0;
+  padding:0;
+  height:100%;
+  overflow:hidden;
+
+  /* ✅ IMAGE AS BACKGROUND */
+  background:url("image.png") no-repeat center/cover;
+}
+
+/* 🌑 SOFT DARK OVERLAY */
+.overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.45);
+  z-index:1;
+}
+
+/* 🎆 TRANSPARENT CANVAS */
+canvas{
+  position:fixed;
+  inset:0;
+  z-index:2;
+  pointer-events:none;
+}
+</style>
+</head>
+
+<body>
+
+<div class="overlay"></div>
+<canvas id="canvas"></canvas>
+
+<audio id="bgMusic" src="bg-music.mp3" loop></audio>
+<audio id="popSound" src="pop.mp3" preload="auto"></audio>
+
+<script>
+/* 🖥️ CANVAS */
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+function resize(){
+  canvas.width = innerWidth;
+  canvas.height = innerHeight;
+}
+resize();
+addEventListener("resize", resize);
+
+/* 🎵 CONTINUE MUSIC */
+const bg = document.getElementById("bgMusic");
+if(sessionStorage.getItem("bg")==="on"){
+  bg.currentTime = parseFloat(sessionStorage.getItem("time")||0);
+  bg.volume = 0.75;
+  bg.play().catch(()=>{
+    document.body.addEventListener("click",()=>bg.play(),{once:true});
+  });
+}
+
+/* 🎶 AUDIO ANALYSER */
+const audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+const src = audioCtx.createMediaElementSource(bg);
+const analyser = audioCtx.createAnalyser();
+src.connect(analyser);
+analyser.connect(audioCtx.destination);
+analyser.fftSize = 256;
+const data = new Uint8Array(analyser.frequencyBinCount);
+
+/* 🔤 WORD SEQUENCE */
+const words = ["HAPPY","NEW","YEAR","2026"];
+let step = 0;
+let activeWord = null;
+let wordLife = 0;
+let finalScene = false;
+
+const fireworks = [];
+const particles = [];
+
+/* 🎆 FIREWORK */
+class Firework{
+  constructor(word,final=false){
+    this.x = canvas.width/2;
+    this.y = canvas.height;
+    this.target = canvas.height*0.42;
+    this.word = word;
+    this.final = final;
+    this.done = false;
+  }
+  update(){
+    this.y -= this.final ? 6 : 11;
+    if(this.y <= this.target && !this.done){
+      this.explode();
+      this.done = true;
+    }
+  }
+  draw(){
+    ctx.fillStyle="white";
+    ctx.beginPath();
+    ctx.arc(this.x,this.y,3,0,Math.PI*2);
+    ctx.fill();
+  }
+  explode(){
+    const pop = document.getElementById("popSound");
+    pop.currentTime = 0;
+    pop.volume = this.final ? 0.6 : 1;
+    pop.play();
+
+    navigator.vibrate?.(this.final?220:120);
+
+    const count = this.final ? 900 : 280;
+    for(let i=0;i<count;i++){
+      particles.push(new Particle(this.x,this.target,this.final));
+    }
+
+    if(!this.final){
+      activeWord = this.word;
+      wordLife = 90;
+    }
+  }
+}
+
+/* 🌈 PARTICLES */
+class Particle{
+  constructor(x,y,slow){
+    this.x=x; this.y=y;
+    this.angle=Math.random()*Math.PI*2;
+    this.speed=Math.random()*(slow?5:8)+3;
+    this.life=slow?160:100;
+    this.hue=Math.random()*360;
+  }
+  update(){
+    this.x+=Math.cos(this.angle)*this.speed*(finalScene?0.6:1);
+    this.y+=Math.sin(this.angle)*this.speed*(finalScene?0.6:1);
+    this.life--;
+  }
+  draw(){
+    ctx.fillStyle=`hsl(${this.hue},100%,60%)`;
+    ctx.beginPath();
+    ctx.arc(this.x,this.y,2,0,Math.PI*2);
+    ctx.fill();
+  }
+}
+
+/* ✨ TEXT */
+function drawText(text,y,size){
+  analyser.getByteFrequencyData(data);
+  const beat = data.reduce((a,b)=>a+b)/data.length;
+
+  ctx.font = `${size}px 'Ricopalm'`;
+  ctx.textAlign="center";
+  ctx.textBaseline="middle";
+  ctx.fillStyle="white";
+
+  ctx.shadowBlur = beat*0.8;
+  ctx.shadowColor = `hsl(${Date.now()/10 % 360},100%,70%)`;
+
+  ctx.fillText(text,canvas.width/2,y);
+  ctx.shadowBlur=0;
+}
+
+/* 🎞️ LOOP (NO BLACK FILL) */
+function animate(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  fireworks.forEach((f,i)=>{
+    f.update(); f.draw();
+    if(f.done) fireworks.splice(i,1);
+  });
+
+  particles.forEach((p,i)=>{
+    p.update(); p.draw();
+    if(p.life<=0) particles.splice(i,1);
+  });
+
+  if(activeWord){
+    drawText(activeWord,canvas.height*0.42,78);
+    wordLife--;
+    if(wordLife<=0) activeWord=null;
+  }
+
+  if(finalScene){
+    drawText("HAPPY NEW YEAR 2026",canvas.height*0.45,92);
+  }
+
+  requestAnimationFrame(animate);
+}
+animate();
+
+/* ⏱️ TIMING */
+const timer = setInterval(()=>{
+  if(step < words.length){
+    fireworks.push(new Firework(words[step]));
+    step++;
+  } else {
+    clearInterval(timer);
+    setTimeout(()=>{
+      finalScene = true;
+      fireworks.push(new Firework("",true));
+    },1500);
+  }
+},1500);
+</script>
+
+</body>
+</html>

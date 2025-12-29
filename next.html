@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Happy New Year 🎉</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
+
+<style>
+body{
+  margin:0;
+  min-height:100vh;
+  background:url("bg.png") no-repeat center/cover;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-family:Arial,sans-serif;
+  overflow:hidden;
+}
+
+/* Dark overlay */
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.45);
+  z-index:-1;
+}
+
+/* 🖤 CARD */
+.card{
+  position:relative;
+  width:90%;
+  max-width:360px;
+  aspect-ratio:3/4;
+  border-radius:24px;
+  overflow:hidden;
+  background:#2b2b2b;
+  box-shadow:
+    0 25px 55px rgba(0,0,0,0.9),
+    0 0 35px rgba(255,215,120,0.3);
+}
+
+/* IMAGE */
+.card img{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  opacity:0.85;
+}
+
+/* Overlay */
+.card::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:linear-gradient(
+    to bottom,
+    rgba(0,0,0,0.35),
+    rgba(0,0,0,0.6)
+  );
+  z-index:1;
+}
+
+/* CONTENT */
+.content{
+  position:relative;
+  z-index:2;
+  height:100%;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  text-align:center;
+  padding:20px;
+}
+
+/* TEXT */
+.message{
+  font-family:'Great Vibes',cursive;
+  font-size:36px;
+  color:#fff;
+  line-height:1.2;
+  margin-bottom:30px;
+  text-shadow:0 4px 10px rgba(0,0,0,0.8);
+}
+
+/* BUTTON */
+.open-btn{
+  background:#e63946;
+  color:#fff;
+  border:none;
+  padding:14px 38px;
+  font-size:18px;
+  border-radius:30px;
+  cursor:pointer;
+  box-shadow:0 10px 22px rgba(230,57,70,0.45);
+}
+
+.open-btn:active{
+  transform:scale(0.95);
+}
+
+@media(max-width:480px){
+  .message{font-size:30px;}
+}
+</style>
+</head>
+
+<body>
+
+<!-- 🎵 BACKGROUND MUSIC -->
+<audio id="bgMusic" src="bg-music.mp3" loop></audio>
+
+<div class="card" id="card">
+  <img src="cracker.png" alt="Cracker">
+  <div class="content">
+    <div class="message">
+      This New Year,<br>
+      something special<br>
+      for you
+    </div>
+    <button class="open-btn" onclick="openGift()">Open It</button>
+  </div>
+</div>
+
+<script>
+const bgMusic = document.getElementById("bgMusic");
+const card = document.getElementById("card");
+
+/*▶️ START / RESUME MUSIC */
+const bgState = sessionStorage.getItem("bg");
+const bgTime  = sessionStorage.getItem("time");
+
+if(bgState==="on"){
+  bgMusic.currentTime = parseFloat(bgTime||0);
+  bgMusic.volume = 0.45;
+  bgMusic.play().catch(()=>{
+    document.body.addEventListener("click",()=>bgMusic.play(),{once:true});
+  });
+}
+
+/* Start music on first interaction */
+document.body.addEventListener("click",()=>{
+  if(bgMusic.paused){
+    bgMusic.volume = 0.45;
+    bgMusic.play();
+    sessionStorage.setItem("bg","on");
+  }
+},{once:true});
+
+/* 🎵 Glow synced to music */
+setInterval(()=>{
+  if(!bgMusic.paused){
+    const beat = Math.sin(bgMusic.currentTime*2.2);
+    const glow = 30 + Math.abs(beat)*30;
+
+    card.style.boxShadow = `
+      0 25px 55px rgba(0,0,0,0.9),
+      0 0 ${glow}px rgba(255,215,120,0.45)
+    `;
+  }
+},120);
+
+/* ➡️ GO NEXT PAGE */
+function openGift(){
+  sessionStorage.setItem("time",bgMusic.currentTime);
+  window.location.href="cards.html";
+}
+</script>
+
+</body>
+</html>
